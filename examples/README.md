@@ -58,6 +58,112 @@ cd /path/to/nvme-ssd-util
 python examples/simple_format_example.py
 ```
 
+## 🏥 Health Monitoring Examples
+
+### 4. `health_status_checker.py` - Comprehensive Health Assessment
+A complete health monitoring tool that analyzes NVMe SSD health status:
+- Multi-parameter health analysis (temperature, spare capacity, wear level)
+- Critical warning detection and interpretation
+- Health scoring algorithm (0-100 scale)
+- Predictive failure analysis
+- Actionable recommendations
+- Support for single device or system-wide analysis
+
+**Usage:**
+```bash
+cd /path/to/nvme-ssd-util
+# Check all devices
+python examples/health_status_checker.py
+
+# Check specific device
+python examples/health_status_checker.py /dev/nvme0
+```
+
+### 5. `device_info_analyzer.py` - Detailed Device Information
+Comprehensive device information extraction and analysis:
+- Complete device identification and specifications
+- Capacity and geometry analysis
+- Performance specifications and capabilities
+- Security features assessment
+- Power management information
+- Current status and health metrics
+- Advanced NVMe features detection
+- JSON export capability
+
+**Usage:**
+```bash
+cd /path/to/nvme-ssd-util
+# Analyze all devices
+python examples/device_info_analyzer.py
+
+# Analyze specific device with JSON export
+python examples/device_info_analyzer.py /dev/nvme0 --json
+```
+
+### 6. `device_detector.py` - Multi-Device Detection and Enumeration
+System-wide NVMe device detection and topology analysis:
+- Automatic discovery of all NVMe devices
+- PCIe topology and connection analysis
+- Physical location identification (M.2, U.2, PCIe slots)
+- Interface speed and lane configuration
+- Device capabilities assessment
+- System summary with health overview
+- Detailed device enumeration
+
+**Usage:**
+```bash
+cd /path/to/nvme-ssd-util
+# Detect all devices
+python examples/device_detector.py
+
+# With JSON export and verbose output
+python examples/device_detector.py --json --verbose
+```
+
+### 7. `lifetime_wear_analyzer.py` - Lifetime and Wear Analysis
+Comprehensive lifetime usage and wear status analysis:
+- Wear level assessment (Excellent/Good/Moderate/High/Critical)
+- Remaining lifespan estimation
+- Wear rate calculation (daily/monthly/yearly)
+- Endurance consumption analysis
+- Temperature impact assessment
+- Power-related wear factors
+- Predictive failure analysis
+- Replacement recommendations
+
+**Usage:**
+```bash
+cd /path/to/nvme-ssd-util
+# Analyze all devices
+python examples/lifetime_wear_analyzer.py
+
+# Analyze specific device with JSON export
+python examples/lifetime_wear_analyzer.py /dev/nvme0 --json
+```
+
+### 8. `waf_calculator.py` - Write Amplification Factor Analysis
+Advanced Write Amplification Factor (WAF) calculation and optimization:
+- WAF calculation using multiple methods
+- Write pattern analysis (sequential vs random)
+- Garbage collection efficiency assessment
+- Performance impact evaluation
+- Optimization recommendations
+- Real-time monitoring capability
+- Trend analysis and predictions
+
+**Usage:**
+```bash
+cd /path/to/nvme-ssd-util
+# Calculate WAF for all devices
+python examples/waf_calculator.py
+
+# Real-time monitoring for 60 seconds
+python examples/waf_calculator.py /dev/nvme0 --monitor=60
+
+# With JSON export
+python examples/waf_calculator.py --json
+```
+
 ## Prerequisites
 
 1. **nvme-cli installed:**
