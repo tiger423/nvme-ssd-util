@@ -2,6 +2,13 @@
 
 This directory contains example scripts demonstrating how to use the NVMe Health Monitor utility to format NVMe SSDs with LBAF (Logical Block Address Format) support.
 
+## 📚 Documentation
+
+For detailed code flow diagrams and function explanations, see:
+- **[Complete Code Flow Documentation](../docs/NVME_FORMAT_CODE_FLOW.md)** - Comprehensive technical documentation with workflow diagrams
+- **[Function Reference](../docs/FUNCTION_REFERENCE.md)** - Detailed API documentation for all NVMe functions
+- **[Integration Patterns](../docs/NVME_FORMAT_CODE_FLOW.md#integration-patterns)** - Code examples for developers
+
 ## ⚠️ CRITICAL WARNING
 
 **These examples involve DESTRUCTIVE operations that will PERMANENTLY ERASE ALL DATA on the target NVMe device. Use with extreme caution and ensure you have proper backups.**

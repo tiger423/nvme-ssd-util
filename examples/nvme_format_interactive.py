@@ -2,14 +2,47 @@
 """
 Interactive NVMe SSD Formatting Tool with LBAF Support
 
-This interactive tool provides a safe way to format NVMe SSDs with:
-- Device selection menu
-- LBA format selection
-- Safety confirmations
-- Progress monitoring
-- Format verification
+PRODUCTION-READY INTERACTIVE TOOL
 
-CAUTION: This tool will permanently erase data. Use with extreme care!
+This comprehensive tool provides a safe, menu-driven interface for formatting
+NVMe SSDs with advanced features and multiple safety mechanisms.
+
+WORKFLOW ARCHITECTURE:
+┌─────────────────────────────────────────────────────────────────┐
+│ Prerequisites → Device Selection → Namespace Selection →       │
+│ LBA Format Selection → Safety Confirmations → Format →         │
+│ Progress Monitoring → Verification → Results                   │
+└─────────────────────────────────────────────────────────────────┘
+
+KEY FEATURES:
+✅ Menu-driven device and namespace selection
+✅ Detailed LBA format analysis and selection
+✅ Multiple safety confirmation prompts
+✅ Real-time progress monitoring with timeout handling
+✅ Automatic format verification
+✅ Comprehensive error handling and recovery
+✅ User-friendly progress indicators and status updates
+
+SAFETY MECHANISMS:
+🔒 Multiple confirmation prompts with exact text matching
+🔒 Device path validation and existence checking
+🔒 LBA format validation against device capabilities
+🔒 Progress monitoring with timeout protection
+🔒 Automatic verification of format results
+🔒 Comprehensive error handling with user guidance
+
+TECHNICAL IMPLEMENTATION:
+- Uses NVMeFormatter class for state management
+- Implements robust error handling for all operations
+- Provides detailed progress feedback and status updates
+- Supports timeout handling for long-running operations
+- Includes format verification to ensure success
+
+⚠️  CAUTION: This tool will permanently erase data. Use with extreme care!
+
+For technical documentation:
+- Code flow: ../docs/NVME_FORMAT_CODE_FLOW.md
+- Function reference: ../docs/FUNCTION_REFERENCE.md
 """
 
 import sys
