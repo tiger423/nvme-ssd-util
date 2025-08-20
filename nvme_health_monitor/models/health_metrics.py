@@ -5,7 +5,7 @@ This module contains data models for NVMe health metrics and device information.
 Uses Pydantic for data validation and serialization.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any, Union
 from pydantic import BaseModel, Field, validator
 from enum import Enum
@@ -231,6 +231,70 @@ class DeviceInfo(BaseModel):
         return None
 
 
+class HealthSnapshot(BaseModel):
+    """Complete health snapshot for a single NVMe device."""
+    
+    device_info: DeviceInfo = Field(..., description="Device information")
+    smart_data: Optional[SMARTData] = Field(None, description="SMART data")
+    error_logs: List[ErrorLogEntry] = Field(default_factory=list, description="Error log entries")
+    self_test_log: Optional['SelfTestLog'] = Field(None, description="Self-test log")
+    timestamp: datetime = Field(default_factory=datetime.now, description="Snapshot timestamp")
+    collection_duration_ms: Optional[float] = Field(None, description="Collection duration in milliseconds")
+    
+    @property
+    def health_status(self) -> HealthStatus:
+        """Get overall health status for this snapshot."""
+        if self.smart_data:
+            return self.smart_data.health_status
+        return HealthStatus.UNKNOWN
+    
+    @property
+    def has_critical_issues(self) -> bool:
+        """Check if device has critical issues."""
+        return self.health_status == HealthStatus.CRITICAL
+    
+    @property
+    def error_count(self) -> int:
+        """Get total error count."""
+        return len(self.error_logs)
+    
+    @property
+    def recent_errors(self) -> List[ErrorLogEntry]:
+        """Get errors from the last 24 hours."""
+        if not self.error_logs:
+            return []
+        
+        cutoff = datetime.now() - timedelta(hours=24)
+        return [error for error in self.error_logs 
+                if error.timestamp and error.timestamp > cutoff]
+
+
+class SelfTestLog(BaseModel):
+    """Self-test log collection model."""
+    
+    device_path: str = Field(..., description="Device path")
+    entries: List[SelfTestEntry] = Field(default_factory=list, description="Self-test entries")
+    current_test: Optional[SelfTestEntry] = Field(None, description="Currently running test")
+    timestamp: datetime = Field(default_factory=datetime.now, description="Log collection timestamp")
+    
+    @property
+    def latest_test_result(self) -> Optional[SelfTestResult]:
+        """Get the result of the most recent test."""
+        if self.entries:
+            return self.entries[0].test_result
+        return None
+    
+    @property
+    def has_failures(self) -> bool:
+        """Check if any tests have failed."""
+        return any(entry.test_result in [
+            SelfTestResult.UNKNOWN_TEST_ERROR,
+            SelfTestResult.COMPLETED_WITH_SEGMENT_ERROR,
+            SelfTestResult.FAILED_SEGMENT,
+            SelfTestResult.UNKNOWN_FAILURE
+        ] for entry in self.entries)
+
+
 class SystemHealthSummary(BaseModel):
     """System-wide health summary model."""
     
@@ -241,29 +305,6 @@ class SystemHealthSummary(BaseModel):
     warning_devices: int = Field(0, description="Number of devices with warnings")
     critical_devices: int = Field(0, description="Number of critical devices")
     
-    @validator('total_devices', pre=True, always=True)
-    def calculate_total_devices(cls, v, values):
-        if 'devices' in values:
-            return len(values['devices'])
-        return v
-    
-    @validator('healthy_devices', pre=True, always=True)
-    def calculate_healthy_devices(cls, v, values):
-        if 'devices' in values:
-            return len([d for d in values['devices'] if d.health_status == HealthStatus.HEALTHY])
-        return v
-    
-    @validator('warning_devices', pre=True, always=True)
-    def calculate_warning_devices(cls, v, values):
-        if 'devices' in values:
-            return len([d for d in values['devices'] if d.health_status == HealthStatus.WARNING])
-        return v
-    
-    @validator('critical_devices', pre=True, always=True)
-    def calculate_critical_devices(cls, v, values):
-        if 'devices' in values:
-            return len([d for d in values['devices'] if d.health_status == HealthStatus.CRITICAL])
-        return v
     
     @property
     def overall_status(self) -> HealthStatus:

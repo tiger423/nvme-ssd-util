@@ -145,6 +145,9 @@ class NVMeTimeoutError(NVMeBaseException):
         self.timeout_duration = timeout_duration
 
 
+NVMeError = NVMeBaseException
+
+
 def create_nvme_base_exception() -> type:
     """
     Create base exception class for NVMe operations.

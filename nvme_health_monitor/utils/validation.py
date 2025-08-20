@@ -162,9 +162,17 @@ def validate_smart_data_structure(smart_data: Dict[str, Any]) -> Tuple[bool, Lis
     if 'temperature' in smart_data:
         temp = smart_data['temperature']
         if temp is not None:
-            is_valid, error_msg = validate_temperature_value(temp, "kelvin")
-            if not is_valid:
-                errors.append(f"Invalid temperature: {error_msg}")
+            if isinstance(temp, dict):
+                if 'celsius' in temp:
+                    is_valid, error_msg = validate_temperature_value(temp['celsius'], "celsius")
+                    if not is_valid:
+                        errors.append(f"Invalid temperature: {error_msg}")
+                else:
+                    errors.append("Invalid temperature: Missing celsius value in temperature object")
+            else:
+                is_valid, error_msg = validate_temperature_value(temp, "kelvin")
+                if not is_valid:
+                    errors.append(f"Invalid temperature: {error_msg}")
     
     percentage_fields = ['available_spare', 'available_spare_threshold', 'percentage_used']
     for field in percentage_fields:

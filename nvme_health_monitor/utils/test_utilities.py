@@ -29,12 +29,36 @@ def generate_mock_smart_data(device_path: str, health_status: str = "good") -> D
     Returns:
         Mock SMART data dictionary
     """
+    if health_status == "good":
+        temp_celsius = random.uniform(35.0, 50.0)
+    elif health_status == "warning":
+        temp_celsius = random.uniform(65.0, 75.0)
+    elif health_status == "critical":
+        temp_celsius = random.uniform(75.0, 85.0)
+    else:
+        temp_celsius = 45.0
+    
+    if health_status == "good":
+        health_enum = "good"
+    elif health_status == "warning":
+        health_enum = "warning"
+    elif health_status == "critical":
+        health_enum = "critical"
+    else:
+        health_enum = "good"
+    
     base_data = {
+        "device_path": device_path,
         "critical_warning": 0,
-        "temperature": 318,
-        "available_spare": 100,
-        "available_spare_threshold": 10,
-        "percentage_used": 1,
+        "temperature": {
+            "celsius": temp_celsius,
+            "fahrenheit": (temp_celsius * 9/5) + 32,
+            "kelvin": temp_celsius + 273.15,
+            "sensor_name": "Composite"
+        },
+        "available_spare": 100.0,
+        "available_spare_threshold": 10.0,
+        "percentage_used": 1.0,
         "data_units_read": random.randint(1000000, 10000000),
         "data_units_written": random.randint(500000, 5000000),
         "host_read_commands": random.randint(10000000, 100000000),
@@ -44,30 +68,25 @@ def generate_mock_smart_data(device_path: str, health_status: str = "good") -> D
         "power_on_hours": random.randint(1000, 50000),
         "unsafe_shutdowns": random.randint(0, 10),
         "media_errors": 0,
-        "num_err_log_entries": 0,
-        "warning_temp_time": 0,
-        "critical_comp_time": 0
+        "error_log_entries": 0,
+        "health_status": health_enum
     }
     
     if health_status == "warning":
         base_data.update({
-            "temperature": random.randint(343, 358),
-            "available_spare": random.randint(5, 15),
-            "percentage_used": random.randint(80, 94),
-            "media_errors": random.randint(1, 5),
-            "num_err_log_entries": random.randint(1, 10),
-            "warning_temp_time": random.randint(1, 100)
+            "available_spare": 12.0,  # Fixed value to ensure warning status
+            "percentage_used": 85.0,
+            "media_errors": 3,
+            "error_log_entries": 5
         })
     elif health_status == "critical":
         base_data.update({
-            "critical_warning": random.randint(1, 7),
-            "temperature": random.randint(358, 373),
-            "available_spare": random.randint(0, 5),
-            "percentage_used": random.randint(95, 100),
-            "media_errors": random.randint(10, 100),
-            "num_err_log_entries": random.randint(20, 200),
-            "unsafe_shutdowns": random.randint(10, 50),
-            "critical_comp_time": random.randint(1, 1000)
+            "critical_warning": 1,  # Fixed value to ensure critical status
+            "available_spare": 3.0,
+            "percentage_used": 97.0,
+            "media_errors": 25,
+            "error_log_entries": 50,
+            "unsafe_shutdowns": 20
         })
     
     return base_data
@@ -111,20 +130,19 @@ def generate_mock_error_logs(device_path: str, error_count: int = 0) -> List[Dic
         
         error = {
             "error_count": i + 1,
-            "sqid": random.randint(0, 15),
-            "cmdid": random.randint(1, 65535),
-            "status_field": random.randint(0, 255),
-            "parm_error_location": random.randint(0, 255),
+            "submission_queue_id": random.randint(0, 15),
+            "command_id": random.randint(1, 65535),
+            "status_field": f"0x{random.randint(0, 255):02x}",
+            "parameter_error_location": f"0x{random.randint(0, 255):02x}",
             "lba": random.randint(0, 1000000000),
-            "nsid": random.randint(1, 4),
-            "vs": random.randint(0, 255),
-            "trtype": "pcie",
-            "cs": random.randint(0, 255),
-            "sct": random.randint(0, 7),
-            "sc": random.randint(0, 255),
-            "more": False,
-            "dnr": random.choice([True, False]),
-            "timestamp": error_time.isoformat(),
+            "namespace_id": random.randint(1, 4),
+            "vendor_specific_info": f"0x{random.randint(0, 255):02x}",
+            "transport_type": "pcie",
+            "command_specific": random.randint(0, 255),
+            "transport_address": f"0000:{random.randint(1,99):02d}:00.0",
+            "transport_service_id": "none",
+            "subsystem_nqn": f"nqn.2014-08.org.nvmexpress:uuid:{random.randint(1000,9999)}",
+            "timestamp": error_time,
             "error_type": random.choice(error_types),
             "severity": random.choice(severities),
             "description": f"Mock error entry {i + 1} for testing"
@@ -147,7 +165,7 @@ def generate_mock_self_test_data(device_path: str, test_count: int = 3) -> List[
         List of mock self-test entries
     """
     test_types = [SelfTestType.SHORT, SelfTestType.EXTENDED, SelfTestType.VENDOR_SPECIFIC]
-    test_results = [SelfTestResult.COMPLETED, SelfTestResult.ABORTED, SelfTestResult.FAILED]
+    test_results = [SelfTestResult.COMPLETED_WITHOUT_ERROR, SelfTestResult.ABORTED_BY_HOST, SelfTestResult.UNKNOWN_FAILURE]
     
     tests = []
     base_time = datetime.utcnow() - timedelta(days=90)
@@ -156,16 +174,14 @@ def generate_mock_self_test_data(device_path: str, test_count: int = 3) -> List[
         test_time = base_time + timedelta(days=random.randint(0, 90))
         
         test = {
-            "self_test_result": random.choice(test_results).value,
-            "self_test_code": random.choice(test_types).value,
-            "segment_number": 0,
-            "valid_diagnostic_information": True,
+            "test_type": random.choice(test_types),
+            "test_result": random.choice(test_results),
             "power_on_hours": random.randint(1000, 50000),
-            "nsid": random.randint(1, 4) if random.choice([True, False]) else None,
-            "flba": random.randint(0, 1000000) if random.choice([True, False]) else None,
-            "status_code_type": random.randint(0, 7),
-            "status_code": random.randint(0, 255),
-            "completion_timestamp": test_time.isoformat()
+            "failing_lba": random.randint(0, 1000000) if random.choice([True, False]) else None,
+            "status_code": str(random.randint(0, 255)),
+            "segment_number": random.randint(0, 15) if random.choice([True, False]) else None,
+            "valid_diagnostic_info": random.choice([True, False]),
+            "timestamp": test_time
         }
         
         tests.append(test)
@@ -191,40 +207,39 @@ def generate_mock_device_info(device_path: str) -> Dict[str, Any]:
         "Seagate FireCuda 530 2TB"
     ]
     
-    vendors = ["Samsung", "Western Digital", "Crucial", "Intel", "Seagate"]
-    
     model = random.choice(models)
-    vendor = random.choice(vendors)
+    total_capacity = random.choice([256, 512, 1024, 2048, 4096]) * 1024**3  # Convert GB to bytes
     
     return {
         "device_path": device_path,
         "controller_info": {
+            "device_path": device_path,
+            "model_number": model,
+            "serial_number": f"S{random.randint(100000000000, 999999999999)}",
+            "firmware_revision": f"{random.randint(1, 9)}.{random.randint(0, 9)}.{random.randint(0, 9)}",
             "pci_vendor_id": f"0x{random.randint(0x1000, 0xFFFF):04x}",
             "pci_subsystem_vendor_id": f"0x{random.randint(0x1000, 0xFFFF):04x}",
-            "serial_number": f"S{random.randint(100000000000, 999999999999)}",
-            "model_name": model,
-            "firmware_revision": f"{random.randint(1, 9)}.{random.randint(0, 9)}.{random.randint(0, 9)}",
-            "recommended_arbitration_burst": random.randint(1, 16),
             "ieee_oui_identifier": f"0x{random.randint(0x000000, 0xFFFFFF):06x}",
-            "multi_interface_capabilities": random.randint(0, 255),
+            "total_nvm_capacity": total_capacity,
+            "unallocated_nvm_capacity": random.randint(0, total_capacity // 10),
             "controller_id": random.randint(1, 65535),
             "version": f"{random.randint(1, 2)}.{random.randint(0, 4)}",
             "rtd3_resume_latency": random.randint(1000, 100000),
             "rtd3_entry_latency": random.randint(1000, 100000),
-            "optional_admin_commands": random.randint(0, 65535),
-            "optional_nvm_commands": random.randint(0, 65535),
-            "maximum_data_transfer_size": random.randint(4, 128),
-            "warning_composite_temperature_threshold": random.randint(343, 358),
-            "critical_composite_temperature_threshold": random.randint(358, 373),
-            "total_capacity_gb": random.choice([256, 512, 1024, 2048, 4096])
+            "optional_admin_commands": [f"cmd_{i}" for i in range(random.randint(1, 5))],
+            "optional_nvm_commands": [f"nvm_cmd_{i}" for i in range(random.randint(1, 5))],
+            "maximum_data_transfer_size": random.randint(4, 128)
         },
         "namespaces": [
             {
-                "nsid": 1,
+                "namespace_id": 1,
+                "device_path": f"{device_path}n1",
                 "size": random.randint(1000000000, 4000000000),
                 "capacity": random.randint(1000000000, 4000000000),
                 "utilization": random.randint(500000000, 2000000000),
-                "format": "512B + 0B"
+                "formatted_lba_size": 512,
+                "metadata_size": 0,
+                "relative_performance": "Best"
             }
         ]
     }
@@ -340,10 +355,11 @@ def create_mock_health_snapshot(device_path: str, health_status: str = "good") -
         "smart_data": generate_mock_smart_data(device_path, health_status),
         "error_logs": generate_mock_error_logs(device_path, error_count),
         "self_test_log": {
+            "device_path": device_path,
             "entries": generate_mock_self_test_data(device_path)
         },
-        "timestamp": datetime.utcnow().isoformat(),
-        "collection_duration_seconds": random.uniform(0.5, 3.0)
+        "timestamp": datetime.utcnow(),
+        "collection_duration_ms": random.uniform(500.0, 3000.0)
     }
     
     return snapshot

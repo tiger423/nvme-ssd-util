@@ -93,7 +93,7 @@ def format_smart_data_csv(snapshots: List[HealthSnapshot]) -> str:
                 snapshot.device_info.device_path,
                 snapshot.timestamp.isoformat(),
                 smart.temperature.celsius if smart.temperature else "",
-                smart.available_spare_percent or "",
+                smart.available_spare or "",
                 smart.available_spare_threshold or "",
                 smart.percentage_used or "",
                 smart.data_units_read or "",
@@ -105,7 +105,7 @@ def format_smart_data_csv(snapshots: List[HealthSnapshot]) -> str:
                 smart.power_on_hours or "",
                 smart.unsafe_shutdowns or "",
                 smart.media_errors or "",
-                smart.error_info_log_entries or "",
+                smart.error_log_entries or "",
                 smart.critical_warning or "",
                 smart.health_status.value if smart.health_status else ""
             ]
@@ -183,10 +183,10 @@ def format_health_summary_text(snapshot: HealthSnapshot) -> str:
     lines.append(f"NVMe Device Health Summary")
     lines.append("=" * 60)
     lines.append(f"Device Path:     {device.device_path}")
-    lines.append(f"Model:           {device.controller_info.model_name}")
+    lines.append(f"Model:           {device.controller_info.model_number}")
     lines.append(f"Serial Number:   {device.controller_info.serial_number}")
     lines.append(f"Firmware:        {device.controller_info.firmware_revision}")
-    lines.append(f"Capacity:        {device.controller_info.total_capacity_gb:.1f} GB")
+    lines.append(f"Capacity:        {device.controller_info.total_nvm_capacity / (1024**3):.1f} GB")
     lines.append(f"Collection Time: {snapshot.timestamp.strftime('%Y-%m-%d %H:%M:%S UTC')}")
     lines.append("")
     
@@ -195,7 +195,7 @@ def format_health_summary_text(snapshot: HealthSnapshot) -> str:
         lines.append("-" * 30)
         lines.append(f"Overall Status:       {smart.health_status.value.upper()}")
         lines.append(f"Temperature:          {smart.temperature.celsius}°C")
-        lines.append(f"Available Spare:      {smart.available_spare_percent}%")
+        lines.append(f"Available Spare:      {smart.available_spare}%")
         lines.append(f"Percentage Used:      {smart.percentage_used}%")
         lines.append(f"Power On Hours:       {smart.power_on_hours:,}")
         lines.append(f"Power Cycles:         {smart.power_cycles:,}")
@@ -224,9 +224,9 @@ def format_health_summary_text(snapshot: HealthSnapshot) -> str:
         lines.append("Latest Self-Test")
         lines.append("-" * 20)
         lines.append(f"Test Type:   {latest_test.test_type.value}")
-        lines.append(f"Result:      {latest_test.result.value}")
-        if latest_test.completion_timestamp:
-            lines.append(f"Completed:   {latest_test.completion_timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
+        lines.append(f"Result:      {latest_test.test_result.value}")
+        if latest_test.timestamp:
+            lines.append(f"Completed:   {latest_test.timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
         lines.append("")
     
     lines.append("=" * 60)
@@ -265,12 +265,12 @@ def format_device_comparison_table(snapshots: List[HealthSnapshot]) -> str:
         smart = snapshot.smart_data
         
         device_path = device.device_path[-18:] if len(device.device_path) > 18 else device.device_path
-        model = device.controller_info.model_name[:23] if len(device.controller_info.model_name) > 23 else device.controller_info.model_name
+        model = device.controller_info.model_number[:23] if len(device.controller_info.model_number) > 23 else device.controller_info.model_number
         
         if smart:
             health = smart.health_status.value.upper()
             temp = f"{smart.temperature.celsius}°C" if smart.temperature else "N/A"
-            spare = f"{smart.available_spare_percent}%" if smart.available_spare_percent else "N/A"
+            spare = f"{smart.available_spare}%" if smart.available_spare else "N/A"
             used = f"{smart.percentage_used}%" if smart.percentage_used else "N/A"
             hours = f"{smart.power_on_hours:,}" if smart.power_on_hours else "N/A"
         else:

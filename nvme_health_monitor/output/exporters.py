@@ -227,21 +227,21 @@ def _export_health_data_csv(snapshots: List[HealthSnapshot], output_file: Path) 
             row = [
                 device.device_path,
                 snapshot.timestamp.isoformat(),
-                device.controller_info.model_name,
+                device.controller_info.model_number,
                 device.controller_info.serial_number,
-                device.controller_info.total_capacity_gb
+                device.total_capacity_gb
             ]
             
             if smart:
                 row.extend([
                     smart.health_status.value,
                     smart.temperature.celsius if smart.temperature else "",
-                    smart.available_spare_percent or "",
+                    smart.available_spare or "",
                     smart.percentage_used or "",
                     smart.power_on_hours or "",
                     smart.power_cycles or "",
                     smart.media_errors or "",
-                    smart.error_info_log_entries or "",
+                    smart.error_log_entries or "",
                     smart.critical_warning or ""
                 ])
             else:

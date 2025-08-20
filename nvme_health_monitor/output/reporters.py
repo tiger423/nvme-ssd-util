@@ -90,7 +90,7 @@ def generate_system_health_summary(snapshots: List[HealthSnapshot]) -> SystemHea
     for snapshot in snapshots:
         if snapshot.smart_data:
             status = snapshot.smart_data.health_status
-            if status == HealthStatus.GOOD:
+            if status == HealthStatus.HEALTHY:
                 healthy_count += 1
             elif status == HealthStatus.WARNING:
                 warning_count += 1
@@ -101,7 +101,7 @@ def generate_system_health_summary(snapshots: List[HealthSnapshot]) -> SystemHea
                 total_temp += snapshot.smart_data.temperature.celsius
                 temp_count += 1
         
-        total_capacity += snapshot.device_info.controller_info.total_capacity_gb
+        total_capacity += snapshot.device_info.total_capacity_gb
         
         if snapshot.error_logs:
             total_errors += len(snapshot.error_logs)
@@ -109,14 +109,15 @@ def generate_system_health_summary(snapshots: List[HealthSnapshot]) -> SystemHea
     avg_temp = total_temp / temp_count if temp_count > 0 else 0.0
     
     return SystemHealthSummary(
+        devices=[snapshot.device_info for snapshot in snapshots],
+        collection_timestamp=datetime.utcnow(),
         total_devices=len(snapshots),
         healthy_devices=healthy_count,
         warning_devices=warning_count,
         critical_devices=critical_count,
         total_capacity_gb=total_capacity,
         average_temperature_celsius=avg_temp,
-        total_errors=total_errors,
-        collection_timestamp=datetime.utcnow()
+        total_errors=total_errors
     )
 
 
@@ -231,7 +232,7 @@ def save_report_to_file(report: Dict[str, Any], output_path: str, format_type: s
 def _generate_executive_summary(snapshots: List[HealthSnapshot]) -> Dict[str, Any]:
     """Generate executive summary from snapshots."""
     total_devices = len(snapshots)
-    healthy = sum(1 for s in snapshots if s.smart_data and s.smart_data.health_status == HealthStatus.GOOD)
+    healthy = sum(1 for s in snapshots if s.smart_data and s.smart_data.health_status == HealthStatus.HEALTHY)
     warning = sum(1 for s in snapshots if s.smart_data and s.smart_data.health_status == HealthStatus.WARNING)
     critical = sum(1 for s in snapshots if s.smart_data and s.smart_data.health_status == HealthStatus.CRITICAL)
     
@@ -256,16 +257,16 @@ def _generate_device_summary(snapshot: HealthSnapshot, report_type: str) -> Dict
     
     summary = {
         "device_path": device.device_path,
-        "model": device.controller_info.model_name,
+        "model": device.controller_info.model_number,
         "serial": device.controller_info.serial_number,
-        "capacity_gb": device.controller_info.total_capacity_gb
+        "capacity_gb": device.total_capacity_gb
     }
     
     if smart:
         summary.update({
             "health_status": smart.health_status.value,
             "temperature_celsius": smart.temperature.celsius if smart.temperature else None,
-            "available_spare_percent": smart.available_spare_percent,
+            "available_spare_percent": smart.available_spare,
             "percentage_used": smart.percentage_used,
             "power_on_hours": smart.power_on_hours,
             "media_errors": smart.media_errors
@@ -277,8 +278,8 @@ def _generate_device_summary(snapshot: HealthSnapshot, report_type: str) -> Dict
             latest_test = snapshot.self_test_log.entries[0]
             summary["latest_self_test"] = {
                 "type": latest_test.test_type.value,
-                "result": latest_test.result.value,
-                "completion_time": latest_test.completion_timestamp.isoformat() if latest_test.completion_timestamp else None
+                "result": latest_test.test_result.value,
+                "completion_time": latest_test.timestamp.isoformat() if latest_test.timestamp else None
             }
     
     return summary
