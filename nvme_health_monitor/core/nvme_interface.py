@@ -687,3 +687,144 @@ def get_self_test_status(device_path: str) -> Dict[str, Any]:
         raise
     except Exception as e:
         raise NVMeCommandError(f"Unexpected error getting self-test status: {str(e)}", device_path=device_path)
+
+
+def get_namespace_info(device_path: str, namespace_id: int) -> Dict[str, Any]:
+    """
+    Get detailed namespace information including supported LBA formats.
+    
+    Args:
+        device_path: NVMe device path
+        namespace_id: Namespace ID to query
+        
+    Returns:
+        Dictionary containing namespace information and supported LBA formats
+        
+    Raises:
+        NVMeDeviceNotFoundError: If device not found
+        NVMeCommandError: If namespace info retrieval fails
+    """
+    if not validate_device_path(device_path):
+        raise NVMeDeviceNotFoundError(f"Invalid or non-existent device: {device_path}")
+    
+    command = ['nvme', 'id-ns', f'{device_path}n{namespace_id}', '--output-format=json']
+    
+    try:
+        result = execute_nvme_command(command)
+        
+        if not result['success']:
+            raise NVMeCommandError(
+                f"Failed to get namespace info for {device_path}n{namespace_id}",
+                command=command,
+                return_code=result['return_code'],
+                stderr_output=result['error_message'],
+                device_path=device_path
+            )
+        
+        return result['data']
+        
+    except (NVMeCommandError, NVMePermissionError, NVMeTimeoutError, NVMeDeviceNotFoundError):
+        raise
+    except Exception as e:
+        raise NVMeCommandError(f"Unexpected error getting namespace info: {str(e)}", device_path=device_path)
+
+
+def format_namespace(device_path: str, namespace_id: int, lbaf: int, secure_erase: str = "none") -> bool:
+    """
+    Format NVMe namespace with specified LBA format.
+    
+    Args:
+        device_path: NVMe device path
+        namespace_id: Namespace ID to format
+        lbaf: LBA Format index (0-15)
+        secure_erase: Secure erase setting ('none', 'user', 'crypto')
+        
+    Returns:
+        bool: True if format started successfully
+        
+    Raises:
+        NVMeDeviceNotFoundError: If device not found
+        NVMeCommandError: If format command fails
+        ValueError: If invalid parameters
+    """
+    if not validate_device_path(device_path):
+        raise NVMeDeviceNotFoundError(f"Invalid or non-existent device: {device_path}")
+    
+    if not (0 <= lbaf <= 15):
+        raise ValueError(f"Invalid LBAF index: {lbaf}. Must be 0-15")
+    
+    secure_erase_codes = {
+        'none': '0',
+        'user': '1', 
+        'crypto': '2'
+    }
+    
+    if secure_erase not in secure_erase_codes:
+        raise ValueError(f"Invalid secure erase: {secure_erase}. Must be one of: {list(secure_erase_codes.keys())}")
+    
+    command = [
+        'nvme', 'format', f'{device_path}n{namespace_id}',
+        f'--lbaf={lbaf}',
+        f'--ses={secure_erase_codes[secure_erase]}'
+    ]
+    
+    try:
+        result = execute_nvme_command(command, timeout=300)  # Format can take longer
+        
+        if not result['success']:
+            raise NVMeCommandError(
+                f"Failed to format {device_path}n{namespace_id}",
+                command=command,
+                return_code=result['return_code'],
+                stderr_output=result['error_message'],
+                device_path=device_path
+            )
+        
+        return True
+        
+    except (NVMeCommandError, NVMePermissionError, NVMeTimeoutError, NVMeDeviceNotFoundError):
+        raise
+    except Exception as e:
+        raise NVMeCommandError(f"Unexpected error formatting namespace: {str(e)}", device_path=device_path)
+
+
+def get_format_status(device_path: str) -> Dict[str, Any]:
+    """
+    Get current format operation status.
+    
+    Args:
+        device_path: NVMe device path
+        
+    Returns:
+        Dictionary containing:
+            - is_formatting: bool
+            - progress_percent: int
+            - estimated_completion: Optional[str]
+            
+    Raises:
+        NVMeDeviceNotFoundError: If device not found
+        NVMeCommandError: If status retrieval fails
+    """
+    if not validate_device_path(device_path):
+        raise NVMeDeviceNotFoundError(f"Invalid or non-existent device: {device_path}")
+    
+    try:
+        smart_data = get_smart_log(device_path)
+        
+        status = {
+            'is_formatting': False,
+            'progress_percent': 100,
+            'estimated_completion': None
+        }
+        
+        if 'format_progress_indicator' in smart_data:
+            progress = smart_data.get('format_progress_indicator', 100)
+            status['is_formatting'] = progress < 100
+            status['progress_percent'] = progress
+        
+        return status
+        
+    except (NVMeCommandError, NVMePermissionError, NVMeTimeoutError, NVMeDeviceNotFoundError):
+        raise
+    except Exception as e:
+        raise NVMeCommandError(f"Unexpected error getting format status: {str(e)}", device_path=device_path)
