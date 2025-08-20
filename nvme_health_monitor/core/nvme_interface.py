@@ -150,7 +150,7 @@ def validate_device_path(device_path: str) -> bool:
     if not device_path:
         return False
     
-    nvme_pattern = re.compile(r'^/dev/nvme\d+$')
+    nvme_pattern = re.compile(r'^/dev/nvme\\d+$')
     if not nvme_pattern.match(device_path):
         return False
     
