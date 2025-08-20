@@ -9,6 +9,13 @@ For detailed code flow diagrams and function explanations, see:
 - **[Function Reference](../docs/FUNCTION_REFERENCE.md)** - Detailed API documentation for all NVMe functions
 - **[Integration Patterns](../docs/NVME_FORMAT_CODE_FLOW.md#integration-patterns)** - Code examples for developers
 
+### Example-Specific Code Flow Documentation
+- **[Health Status Checker Flow](../docs/HEALTH_STATUS_CHECKER_FLOW.md)** - Multi-parameter health assessment algorithms and scoring
+- **[Device Info Analyzer Flow](../docs/DEVICE_INFO_ANALYZER_FLOW.md)** - Comprehensive device information extraction and analysis
+- **[Device Detector Flow](../docs/DEVICE_DETECTOR_FLOW.md)** - System-wide device discovery and PCIe topology analysis
+- **[Lifetime & Wear Analyzer Flow](../docs/LIFETIME_WEAR_ANALYZER_FLOW.md)** - Wear level assessment and lifespan prediction algorithms
+- **[WAF Calculator Flow](../docs/WAF_CALCULATOR_FLOW.md)** - Write amplification factor calculation and optimization strategies
+
 ## ⚠️ CRITICAL WARNING
 
 **These examples involve DESTRUCTIVE operations that will PERMANENTLY ERASE ALL DATA on the target NVMe device. Use with extreme caution and ensure you have proper backups.**
